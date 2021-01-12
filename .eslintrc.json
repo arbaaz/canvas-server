@@ -18,6 +18,7 @@
         "space-before-function-paren": [
             "error",
             "never"
-        ]
+        ],
+        "object-curly-spacing": "off"
     }
 }
