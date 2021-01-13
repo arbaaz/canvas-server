@@ -3,12 +3,50 @@ const { createCanvas } = require('canvas');
 const {spawn} = require('child_process');
 const fs = require("fs");
 const path = require('path');
+
 const { writeFileSync, createWriteStream } = require('fs');
 
 const width = 1200;
 const height = 630;
+const canvas = createCanvas(width, height);
+const { Readable } = require('stream');
 
-module.exports = function generateVideo(text){
+
+export class FrameCounter extends Readable {
+    constructor(opt) {
+      super(opt);
+      this._max = 50;
+      this._index = 1;
+    }
+  
+    _read() {
+      const i = this._index++;
+      if (i > this._max)
+        this.push(null);
+      else {
+        drawOnCanvas(canvas, `Frame-${i}`);
+        this.push(canvas.toBuffer('image/png'));
+      }
+    }
+  }
+
+
+export function generateOutputStream(text, outStream){   
+    let i = 1; 
+    
+    const _interval  = setInterval(() => {
+        console.log('Text', text);
+        drawOnCanvas(canvas, `${text}-Frame-${i}`);
+        outStream.write(canvas.toBuffer('image/png'));
+        if(i === 50){
+            clearInterval(_interval);
+            outStream.end();
+        }
+        i++;
+    }, 10);
+}
+
+export function generateVideo(text){
     return new Promise(resolve => {
         const videoFilePath = path.resolve(__dirname, `../videos/output_${Date.now()}.mp4`);
         const ffmpeg = spawnFFmpeg(videoFilePath);
@@ -19,7 +57,6 @@ module.exports = function generateVideo(text){
             console.log('Text', text);
             drawOnCanvas(canvas, `${text}-Frame-${i}`);
             ffmpeg.stdin.write(canvas.toBuffer('image/png'));
-            // writeFileSync(`image/${text}.png`, canvas.toBuffer('image/png'));
             if(i === 50){
                 clearInterval(_interval);
                 ffmpeg.once('exit', () => {
@@ -31,6 +68,8 @@ module.exports = function generateVideo(text){
         }, 10);
     });
 }
+
+
 
 function spawnFFmpeg(videoFilePath){
     const ffmpeg = spawn('ffmpeg', [
