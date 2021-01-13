@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 
 export function generateVideoFile(text) {
   return new Promise(resolve => {
-    const videoFilePath = path.resolve(__dirname, `../videos/output_${Date.now()}.mp4`);
+    const videoFilePath = path.resolve(__dirname, `../out/videos/output_${Date.now()}.mp4`);
     const ffmpeg = spawnFFmpeg(videoFilePath);
 
     let i = 1

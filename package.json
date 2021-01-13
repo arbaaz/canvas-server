@@ -5,7 +5,9 @@
   "scripts": {
     "start": "node src",
     "cli": "node src/cli.js",
-    "test": "eslint src --fix && mocha"
+    "test": "eslint src --fix && mocha",
+    "clean":"rm -rf ./out/images/* ./out/videos/*",
+    "precli": "npm run clean"
   },
   "repository": {
     "type": "git",

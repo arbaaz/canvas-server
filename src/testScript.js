@@ -21,14 +21,14 @@ function imageGenerator() {
     drawText('Frame-'+i.toString());
     stream.push(canvas.toBuffer('image/png'));
     
-    if (i === 100) {
+    if (i === 50) {
       clearInterval(_interval);
       stream.push(null)
     }
     
     i++;
 
-  }, 100)
+  }, 10)
 
   return stream
 }
@@ -57,7 +57,7 @@ export function drawText(text) {
 
 ffmpeg(imageGenerator())
   .format("image2pipe")
-  .fps(30)
+  .fps(10)
   .on('end', function () {
     console.log('file has been converted succesfully');
     process.exit();
@@ -68,5 +68,5 @@ ffmpeg(imageGenerator())
     console.log('ffmpeg stderr:\n' + stderr);
     process.exit();
   })
-  .save('out.mp4')
-  // .pipe(createWriteStream('out.mp4'), { end: true })
+  // .save('out/videos/test.mp4')
+  .pipe(createWriteStream('out/videos/test.mp4'), { end: true })
