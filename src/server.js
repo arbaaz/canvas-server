@@ -3,7 +3,14 @@ import { port } from './config';
 import fs from 'fs';
 import { generateVideoFile } from './ffmpeg_cli';
 import ffmpeg from 'fluent-ffmpeg';
-import { FrameCounter } from './frame_counter';
+import { createCanvas } from 'canvas';
+const Readable = require('stream').Readable
+
+const width = 1200;
+const height = 630;
+const canvas = createCanvas(width, height);
+const context = canvas.getContext('2d');
+
 
 const app = express();
 
@@ -11,8 +18,53 @@ app.get("/", function (req, res) {
   res.sendFile(__dirname + "/index.html");
 });
 
+function imageGenerator() {
+  let i = 0;
 
-app.get('/videos', (req, res) => {
+  const stream = new Readable({
+    objectMode: false,
+    read() { }
+  })
+
+
+  const _interval = setInterval(() => {
+    drawText('Frame-'+i.toString());
+    stream.push(canvas.toBuffer('image/png'));
+    
+    if (i === 10) {
+      clearInterval(_interval);
+      stream.push(null)
+    }
+    
+    i++;
+
+  }, 100)
+
+  return stream
+}
+
+function drawText(text) {
+  console.log('text:', text);
+  context.fillStyle = '#000';
+  context.fillRect(0, 0, width, height);
+
+  context.font = 'bold 70pt Menlo';
+  context.textAlign = 'center';
+  context.textBaseline = 'top';
+  context.fillStyle = '#3574d4';
+
+  const textWidth = context.measureText(text).width;
+  context.fillRect(600 - textWidth / 2 - 10, 170 - 5, textWidth + 20, 120);
+  context.fillStyle = '#fff';
+  context.fillText(text, 600, 170);
+
+  context.fillStyle = '#fff';
+  context.font = 'bold 30pt Menlo';
+  context.fillText('invideo.io', 600, 530);
+}
+
+
+app.get('/videos.mp4', (req, res) => {
   // Ensure there is a range given for the video
   const range = req.headers.range || 'bytes=0-';
   const text = req.query.text || 'Frame';
@@ -20,27 +72,24 @@ app.get('/videos', (req, res) => {
     res.status(400).send("Requires Range header");
   }
 
-  const videoStream = new FrameCounter();
-
   const headers = {
     "Content-Type": "video/mp4",
   };
 
   res.writeHead(206, headers);
 
-  ffmpeg(videoStream)
-    .format("image2pipe")
-    .fps(10)
-    // .outputOptions("-preset ultrafast")
-    .on('end', function () {
-      console.log('file has been converted succesfully');
-    })
-    .on('error', function (err, stdout, stderr) {
-      console.log('Error: ' + err.message);
-      console.log('ffmpeg output:\n' + stdout);
-      console.log('ffmpeg stderr:\n' + stderr);
-    })
-    .pipe(res, { end: true })
+  ffmpeg(imageGenerator())
+  .format("image2pipe")
+  .fps(1)
+  .on('end', function () {
+    console.log('file has been converted succesfully');
+  })
+  .on('error', function (err, stdout, stderr) {
+    console.log('Error: ' + err.message);
+    console.log('ffmpeg output:\n' + stdout);
+    console.log('ffmpeg stderr:\n' + stderr);
+  })
+  .pipe(res, { end: true })
 });
 
 

@@ -3,39 +3,15 @@ import { createCanvas } from 'canvas';
 
 const width = 1200;
 const height = 630;
-export const canvas = createCanvas(width, height);
+const canvas = createCanvas(width, height);
 const context = canvas.getContext('2d');
-
-initFrame();
-
-export class FrameCounter extends Readable {
-  constructor(opt) {
-    super(opt);
-    this._max = 50;
-    this._index = 0;    
-  }
-
-  _read() {
-    const i = this._index++;
-    if (i > this._max)
-      this.push(null);
-    else {
-      drawText(canvas, `Frame-${i}`);
-      this.push(canvas.toBuffer('image/png'));
-    }
-  }
-}
-
-export function drawText(text){
-  context.fillText(text, 600, 170);
-}
 
 export function getCanvasImage(){
   return canvas.toBuffer('image/png')
 }
 
-function initFrame() {
-  const text  = "Ready";
+export function drawText(text) {
+  console.log('text:', text);
   context.fillStyle = '#000';
   context.fillRect(0, 0, width, height);
 
