@@ -1,12 +1,9 @@
 import express from 'express';
 import { port } from './config';
-import fs, { promises } from 'fs';
-import path from 'path';
-import { FrameCounter, generateVideo, generateOutputStream } from './test';
+import fs from 'fs';
+import { generateVideoFile } from './ffmpeg_cli';
 import ffmpeg from 'fluent-ffmpeg';
-
-const width = 1200;
-const height = 630;
+import { FrameCounter } from './frame_counter';
 
 const app = express();
 
@@ -29,18 +26,21 @@ app.get('/videos', (req, res) => {
     "Content-Type": "video/mp4",
   };
 
-  res.writeHead(200, headers);
-    ffmpeg(videoStream)
-      .format("image2pipe")
-      .fps(10)
-      // .outputOptions("-preset ultrafast")
-      .on('end', function() {
-        console.log('file has been converted succesfully');
-      })
-      .on('error', function(err) {
-        console.log('an error happened: ' + err.message);
-      })
-      .pipe(res)
+  res.writeHead(206, headers);
+
+  ffmpeg(videoStream)
+    .format("image2pipe")
+    .fps(10)
+    // .outputOptions("-preset ultrafast")
+    .on('end', function () {
+      console.log('file has been converted succesfully');
+    })
+    .on('error', function (err, stdout, stderr) {
+      console.log('Error: ' + err.message);
+      console.log('ffmpeg output:\n' + stdout);
+      console.log('ffmpeg stderr:\n' + stderr);
+    })
+    .pipe(res, { end: true })
 });
 
 
@@ -53,7 +53,7 @@ app.get('/video', (req, res) => {
     res.status(400).send("Requires Range header");
   }
 
-  generateVideo(text).then((videoPath) => {
+  generateVideoFile(text).then((videoPath) => {
     // const videoPath = path.resolve(__dirname, "../output.mp4");
     const videoSize = fs.statSync(videoPath).size;
 

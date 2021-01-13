@@ -4,6 +4,7 @@
   "main": "src",
   "scripts": {
     "start": "node src",
+    "cli": "node src/cli.js",
     "test": "eslint src --fix && mocha"
   },
   "repository": {
