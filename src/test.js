@@ -1,52 +1,62 @@
 
 const { createCanvas } = require('canvas');
 const {spawn} = require('child_process');
+const fs = require("fs");
+const path = require('path');
 const { writeFileSync, createWriteStream } = require('fs');
 
 const width = 1200;
 const height = 630;
 
-const ffmpeg = spawn('ffmpeg', [
-    '-framerate',
-    '10',
-    '-f',
-    'image2pipe',
-    '-i',
-    '-',
-    'output.mp4',
-  ]);
-//todo: ffmpeg stream
+module.exports = function generateVideo(text){
+    return new Promise(resolve => {
+        const videoFilePath = path.resolve(__dirname, `../videos/output_${Date.now()}.mp4`);
+        const ffmpeg = spawnFFmpeg(videoFilePath);
+        const canvas = createCanvas(width, height);
+        
+        let i = 1
+        const _interval  = setInterval(() => {
+            console.log('Text', text);
+            drawOnCanvas(canvas, `${text}-Frame-${i}`);
+            ffmpeg.stdin.write(canvas.toBuffer('image/png'));
+            // writeFileSync(`image/${text}.png`, canvas.toBuffer('image/png'));
+            if(i === 50){
+                clearInterval(_interval);
+                ffmpeg.stdin.end();
+                console.log('Done');
+                setTimeout(() => {
+                    resolve(videoFilePath);
+                }, 100);
+            }
+            i++;
+        }, 10);
+    });
+}
 
-// detect if ffmpeg was not spawned correctly
-ffmpeg.stderr.setEncoding('utf8');
-ffmpeg.stderr.on('data', function(data) {
-    console.log(data);
-    // process.exit(1);
-});
+function spawnFFmpeg(videoFilePath){
+    const ffmpeg = spawn('ffmpeg', [
+        '-framerate',
+        '10',
+        '-f',
+        'image2pipe',
+        '-i',
+        '-',
+        videoFilePath,
+      ]);
+    //todo: ffmpeg stream
+    
+    // detect if ffmpeg was not spawned correctly
+    ffmpeg.stderr.setEncoding('utf8');
+    ffmpeg.stderr.on('data', function(data) {
+        console.log(data);
+    });
 
-const canvas = createCanvas(width, height);
-
-let i = 1
-const _interval  = setInterval(() => {
-    const text = `Frame-${i}`
-    console.log('Text', text);
-    drawOnCanvas(canvas, text);
-    ffmpeg.stdin.write(canvas.toBuffer('image/png'));
-    writeFileSync(`image/${text}.png`, canvas.toBuffer('image/png'));
-    i++;
-    if(i === 50){
-        console.log('Done');
-        clearInterval(_interval);
-        ffmpeg.stdin.end();
-        process.exit(0);
-    }
-}, 10);
-
+    return ffmpeg;
+}
 
 
 function drawOnCanvas(canvas, text) {
     const context = canvas.getContext('2d');
-  
     context.fillStyle = '#000';
     context.fillRect(0, 0, width, height);
   

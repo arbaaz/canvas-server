@@ -1,54 +1,58 @@
 import express from 'express';
 import { port } from './config';
-import { createCanvas } from 'canvas';
-import {spawn} from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import generateVideo from './test';
 
 const width = 1200;
 const height = 630;
 
 const app = express();
 
-const child = spawn('ffmpeg', [
-  '-framerate',
-  '10',
-  '-f',
-  'image2pipe',
-  '-i',
-  '-',
-  'output.mp4',
-]);
-
-child.once('error', (err) => {
-  console.log(err);
+app.get("/", function (req, res) {
+  res.sendFile(__dirname + "/index.html");
 });
 
-app.get('/', (req, res) => {
-  const canvas = createCanvas(width, height);
-  drawOnCanvas(canvas);
-  res.writeHead(200, {
-    'Content-Type': "image/png",
-  });
+app.get('/video', (req, res) => {
+  // Ensure there is a range given for the video
+  const range = req.headers.range;
+  const text = req.query.text || 'Frame';
+  if (!range) {
+    res.status(400).send("Requires Range header");
+  }
+
+  generateVideo(text).then((videoPath)=> {
+    // const videoPath = path.resolve(__dirname, "../output.mp4");
+    const videoSize = fs.statSync(videoPath).size;
   
-  res.end(canvas.toBuffer('image/png'));
-  // res.send(`
-  // <video id="videoPlayer" controls>
-  // <source src="http://localhost:8080/video.mp4" type="video/mp4">
-  // </video>
-  // `);
-});
-
-app.get('/video.mp4', (req, res) => {
-  const canvas = createCanvas(width, height);
-  drawOnCanvas(canvas);
-  res.writeHead(200, {
-    'Content-Type': 'video/mp4',
-  });
-  child.stdin.write(canvas.toBuffer('image/png'));
-  child.stdout.on('data', (data) => {
-    res.write(data);
-  });
-  child.stdin.end();
-  res.end();
+    // Parse Range
+    // Example: "bytes=32324-"
+    const CHUNK_SIZE = 10 ** 6; // 1MB
+    // const CHUNK_SIZE = 10 ** 3; // 1MB
+    const start = Number(range.replace(/\D/g, ""));
+    const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+  
+    // Create headers
+    const contentLength = end - start + 1;
+    const headers = {
+      "Content-Range": `bytes ${start}-${end}/${videoSize}`,
+      "Accept-Ranges": "bytes",
+      "Content-Length": contentLength,
+      "Content-Type": "video/mp4",
+    };
+  
+    // HTTP Status 206 for Partial Content
+    res.writeHead(206, headers);
+  
+    // create video read stream for this particular chunk
+    const videoStream = fs.createReadStream(videoPath, { start, end });
+    
+   
+    // Stream the video chunk to the client
+    videoStream.pipe(res);
+  }).catch(e => {
+    console.log(e);
+  })
 });
 
 
@@ -56,25 +60,3 @@ app.listen(port, () => console.log(
     `Example app listening on port ${port}!`,
 ));
 
-
-function drawOnCanvas(canvas) {
-  const text = "Frame-1"
-  const context = canvas.getContext('2d');
-
-  context.fillStyle = '#000';
-  context.fillRect(0, 0, width, height);
-
-  context.font = 'bold 70pt Menlo';
-  context.textAlign = 'center';
-  context.textBaseline = 'top';
-  context.fillStyle = '#3574d4';
-
-  const textWidth = context.measureText(text).width;
-  context.fillRect(600 - textWidth / 2 - 10, 170 - 5, textWidth + 20, 120);
-  context.fillStyle = '#fff';
-  context.fillText(text, 600, 170);
-
-  context.fillStyle = '#fff';
-  context.font = 'bold 30pt Menlo';
-  context.fillText('invideo.io', 600, 530);
-}
