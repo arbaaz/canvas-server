@@ -22,11 +22,10 @@ module.exports = function generateVideo(text){
             // writeFileSync(`image/${text}.png`, canvas.toBuffer('image/png'));
             if(i === 50){
                 clearInterval(_interval);
-                ffmpeg.stdin.end();
-                console.log('Done');
-                setTimeout(() => {
+                ffmpeg.once('exit', () => {
                     resolve(videoFilePath);
-                }, 100);
+                })
+                ffmpeg.stdin.end();
             }
             i++;
         }, 10);

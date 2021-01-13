@@ -15,7 +15,7 @@ app.get("/", function (req, res) {
 
 app.get('/video', (req, res) => {
   // Ensure there is a range given for the video
-  const range = req.headers.range;
+  const range = req.headers.range || 'bytes=0-';
   const text = req.query.text || 'Frame';
   if (!range) {
     res.status(400).send("Requires Range header");
@@ -47,7 +47,6 @@ app.get('/video', (req, res) => {
     // create video read stream for this particular chunk
     const videoStream = fs.createReadStream(videoPath, { start, end });
     
-   
     // Stream the video chunk to the client
     videoStream.pipe(res);
   }).catch(e => {
