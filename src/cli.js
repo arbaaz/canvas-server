@@ -6,4 +6,5 @@ require('@babel/register')({
 });
 
 // Import the rest of our application.
-module.exports = require('./testScript');
+// module.exports = require('./testScript');
+module.exports = require('./pixi_test');

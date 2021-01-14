@@ -6,7 +6,7 @@
     "start": "node src",
     "cli": "node src/cli.js",
     "test": "eslint src --fix && mocha",
-    "clean":"rm -rf ./out/images/* ./out/videos/*",
+    "clean": "rm -rf ./out/images/* ./out/videos/*",
     "precli": "npm run clean",
     "prestart": "npm run clean"
   },
@@ -23,9 +23,14 @@
     "dotenv": "^8.2.0",
     "express": "^4.13.3",
     "fluent-ffmpeg": "^2.1.2",
+    "gl": "^4.9.0",
     "jsdom": "^16.4.0",
     "mocha": "^6.2.3",
     "morgan": "^1.10.0",
+    "node-addon-api": "^3.1.0",
+    "node-gles": "0.0.17",
+    "pixi-shim": "^2.2.0",
+    "pixi.js": "^5.3.7",
     "resource-router-middleware": "^0.6.0"
   },
   "devDependencies": {
